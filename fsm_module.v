@@ -30,7 +30,11 @@ output reg        unlock_on,
 output reg        alarm_on,
 output reg        key_led,
 output reg  [3:0] input_count_led,
-output reg  [2:0] state
+output reg  [2:0] state,
+// [FIX] Expose the digits entered so far so the FND can actually show them.
+//       Without this port the entered value never leaves the FSM, which is why
+//       the FND could only ever display dashes/zeros.
+output reg [15:0] disp_code
 );
 
 localparam IDLE   = 3'd0;
@@ -323,4 +327,20 @@ always @(posedge clk or posedge rst) begin
         endcase
     end
 end
+
+// [FIX] Left-align the entered digits into a 16-bit display word.
+//       input_buffer is right-aligned (newest digit in [3:0]), but display_policy
+//       gates digits from the left using input_count (>=1 -> [15:12] first).
+//       Aligning here makes the first key appear in the leftmost FND digit and
+//       keeps unentered positions as dashes.
+always @* begin
+    case (digit_count)
+        3'd0:    disp_code = 16'h0000;
+        3'd1:    disp_code = {input_buffer[3:0],  12'h000};
+        3'd2:    disp_code = {input_buffer[7:0],   8'h00};
+        3'd3:    disp_code = {input_buffer[11:0],  4'h0};
+        default: disp_code =  input_buffer;            // 4 digits entered
+    endcase
+end
+
 endmodule
