@@ -4,6 +4,8 @@ module fnd_team_adapter (
     input  wire [2:0]  state,
     input  wire [3:0]  input_count_led,
     input  wire        alarm_on,
+    // [FIX] New port to receive the actual entered digits from the FSM.
+    input  wire [15:0] digit_data,
     output wire [7:0]  fnd_seg,
     output wire [3:0]  fnd_com,
     output wire [7:0]  fnd1_seg
@@ -27,7 +29,9 @@ module fnd_team_adapter (
         .fsm_state   (state),
         .mask_enable (1'b0),
         .input_count (input_count_int),
-        .digit_data  (16'h0000),
+        // [FIX] Was hardwired to 16'h0000, so the entered value could never be
+        //       shown. Pass the real digits through from the new adapter port.
+        .digit_data  (digit_data),
         .lock        (alarm_on),
         .fnd_seg     (fnd_seg),
         .fnd_com     (fnd_com),
