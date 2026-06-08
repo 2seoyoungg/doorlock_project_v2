@@ -35,19 +35,27 @@ module top_module(
     wire unlock_on, alarm_on, key_led;
     wire [3:0] input_count_led;
     wire [2:0] state;
+    wire [15:0] disp_code;          // [FIX] carries entered digits FSM -> FND
 
     fsm_module #(.AUTO_LOCK_TICKS(10000), .INPUT_TIMEOUT_TICKS(10000)) FSM (
         .clk(clk_1khz), .rst(rst),
         .digit_in(digit_in), .key_valid(key_valid),
         .enter(enter), .change(change), .auto_open(auto_open),
         .unlock_on(unlock_on), .alarm_on(alarm_on), .key_led(key_led),
-        .input_count_led(input_count_led), .state(state)
+        .input_count_led(input_count_led), .state(state),
+        .disp_code(disp_code)        // [FIX] expose entered digits to the FND
     );
 
     // ---- FND output (E adapter) ----
     fnd_team_adapter U_FND (
         .clk(clk_1khz), .rst(rst), .state(state),
         .input_count_led(input_count_led),
+        // [FIX] alarm_on was left unconnected, so the adapter's lock input floated
+        //       and forced display_policy into its lockout branch -> permanent dashes
+        //       and an apparently "dead" FND. Connect it explicitly.
+        .alarm_on(alarm_on),
+        // [FIX] feed the real entered digits so the input value shows on the FND.
+        .digit_data(disp_code),
         .fnd_seg(FND_SEG), .fnd_com(FND_COM)
     );
 
